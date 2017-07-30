@@ -12,7 +12,10 @@ defmodule TrippleStore.Setup do
   ##
 
   defp create_table do
-    with {:atomic, :ok} <- :mnesia.create_table(:tripple_store, table_definition()) do
+    with {:atomic, :ok} <- :mnesia.create_table(:tripple_store, table_definition()),
+         {:atomic, :ok} <- :mnesia.add_table_index(:tripple_store, :subject),
+         {:atomic, :ok} <- :mnesia.add_table_index(:tripple_store, :predicate),
+         {:atomic, :ok} <- :mnesia.add_table_index(:tripple_store, :object) do
       :ok
     else
       {:aborted, {:already_exists, :tripple_store}} -> :ok
