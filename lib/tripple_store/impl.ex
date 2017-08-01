@@ -30,6 +30,16 @@ defmodule TrippleStore.Impl do
     end
   end
 
+  @spec select(TrippleStore.context, TrippleStore.pattern, (TrippleStore.binding -> any)) :: :ok | TrippleStore.error
+  def select(context, pattern, fun) do
+    transaction = fn () -> do_select(context, pattern, fun, %{}) end
+    with {:atomic, result} <- :mnesia.transaction(transaction) do
+      result
+    else
+      {:aborted, reason} -> {:error, reason}
+    end
+  end
+
   ##
   ## Private
   ##
@@ -53,5 +63,37 @@ defmodule TrippleStore.Impl do
   defp do_delete(context) do
     :ok = :mnesia.delete(:tripple_store, context, :write)
   end
+
+  defp do_select(context, [], fun, binding), do: fun.(binding)
+  defp do_select(context, [tripple|pattern], fun, binding) do
+    for match <- match_triple(context, tripple, binding) do
+      new_binding = update_binding(match, tripple, binding)
+      do_select(context, pattern, fun, new_binding)
+    end
+    :ok
+  end
+
+  defp match_triple(context, {subject, predicate, object}, binding) do
+    new_subject = bind_var(subject, binding)
+    new_predicate = bind_var(predicate, binding)
+    new_object = bind_var(object, binding)
+    match_pattern = {:statement, context, new_subject, new_predicate, new_object}
+    :mnesia.match_object(:tripple_store, match_pattern, :read)
+  end
+
+  defp bind_var({:var, name}, binding), do: Map.get(binding, name, :'_')
+  defp bind_var(value, _binding), do: value
+
+  defp update_binding({_, _, m_s, m_p, m_o}, {p_s, p_p, p_o}, binding) do
+    binding
+    |> bind_match(p_s, m_s)
+    |> bind_match(p_p, m_p)
+    |> bind_match(p_o, m_o)
+  end
+
+  defp bind_match(binding, {:var, name}, value) do
+    Map.put(binding, name, value)
+  end
+  defp bind_match(binding, _, _), do: binding
 
 end
