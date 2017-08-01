@@ -217,4 +217,25 @@ defmodule TrippleStoreTest do
 
   end
 
+  test "find path", ctx do
+    context = ["foo"]
+    graph = [
+      {:a, :x, :b},
+      {:b, :x, :c},
+      {:c, :x, :d},
+      {:b, :x, :d},
+      {:u, :x, :d},
+      {:b, :x, :u},
+      {:a, :x, :u},
+    ]
+    assert :ok = TrippleStore.put(context, graph)
+    assert :ok = TrippleStore.path(context, :a, :d, &add(ctx, &1))
+    assert [
+      [{:a, :x, :b}, {:b, :x, :c}, {:c, :x, :d}],
+      [{:a, :x, :b}, {:b, :x, :d}],
+      [{:a, :x, :b}, {:b, :x, :u}, {:u, :x, :d}],
+      [{:a, :x, :u}, {:u, :x, :d}]
+    ] = Enum.sort(get(ctx))
+  end
+
 end
