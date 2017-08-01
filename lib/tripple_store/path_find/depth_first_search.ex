@@ -16,8 +16,8 @@ defmodule TrippleStore.PathFind.DepthFirstSearch do
   import TrippleStore.Access
   import TrippleStore.Pattern
 
-  def do_find_path(_context, from, to, fun, _visited, path) when from == to, do: fun.(Enum.reverse(path))
-  def do_find_path(context, from, to, fun, visited, path) do
+  defp do_find_path(_context, from, to, fun, _visited, path) when from == to, do: fun.(Enum.reverse(path))
+  defp do_find_path(context, from, to, fun, visited, path) do
     get_neighbours(context, from, fn(attr, next) ->
       unless Enum.member?(visited, next) do
         do_find_path(context, next, to, fun, [from|visited], [{from, attr, next}|path])
@@ -26,7 +26,7 @@ defmodule TrippleStore.PathFind.DepthFirstSearch do
     :ok
   end
 
-  def get_neighbours(context, node, fun) do
+  defp get_neighbours(context, node, fun) do
     pattern = [match(value(node), var(:attr), var(:next))]
     f = fn(binding) ->
       next = binding[:next]
