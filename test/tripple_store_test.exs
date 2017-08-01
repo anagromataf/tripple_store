@@ -170,6 +170,16 @@ defmodule TrippleStoreTest do
       assert [%{"u" => "d", "v" => 100}] = get(ctx)
     end
 
+    test "with specific contexts", ctx do
+      assert :ok = TrippleStore.put(["foo", "1"], [{:a, :b, :c}])
+      assert :ok = TrippleStore.put(["foo", "2"], [{:a, :b, :d}])
+
+      pattern = [match(value(:a), value(:b), var("u"))]
+
+      assert :ok = TrippleStore.select(["foo", "1"], pattern, &add(ctx, &1))
+      assert [%{"u" => :c}] = get(ctx)
+    end
+
   end
 
 end
