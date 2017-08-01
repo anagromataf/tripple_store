@@ -73,7 +73,7 @@ defmodule TrippleStore.Access do
     :ok
   end
 
-  defp match_triple(context, {subject, predicate, object}, binding) do
+  defp match_triple(context, {:match, subject, predicate, object}, binding) do
     new_subject = bind_var(subject, binding)
     new_predicate = bind_var(predicate, binding)
     new_object = bind_var(object, binding)
@@ -82,9 +82,9 @@ defmodule TrippleStore.Access do
   end
 
   defp bind_var({:var, name}, binding), do: Map.get(binding, name, :'_')
-  defp bind_var(value, _binding), do: value
+  defp bind_var({:value, value}, _binding), do: value
 
-  defp update_binding({_, _, m_s, m_p, m_o}, {p_s, p_p, p_o}, binding) do
+  defp update_binding({_, _, m_s, m_p, m_o}, {_, p_s, p_p, p_o}, binding) do
     binding
     |> bind_match(p_s, m_s)
     |> bind_match(p_p, m_p)

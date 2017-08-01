@@ -1,5 +1,7 @@
 defmodule TrippleStoreTest do
   use ExUnit.Case
+  import TrippleStore.Pattern
+
   doctest TrippleStore
 
   setup do
@@ -46,8 +48,8 @@ defmodule TrippleStoreTest do
       assert :ok = TrippleStore.put(context, graph)
 
       pattern = [
-        {:a, :b, {:var, "u"}},
-        {{:var, "u"}, :e, {:var, "v"}}
+        match(value(:a), value(:b), var("u")),
+        match(var("u"), value(:e), var("v"))
       ]
 
       fun = fn(binding) ->
@@ -74,8 +76,8 @@ defmodule TrippleStoreTest do
       assert :ok = TrippleStore.put(context, graph)
 
       pattern = [
-        {:a, :b, {:var, "u"}},
-        {{:var, "u"}, :e, {:var, "v"}}
+        match(value(:a), value(:b), var("u")),
+        match(var("u"), value(:e), var("v"))
       ]
 
       fun = fn(binding) ->
@@ -103,8 +105,8 @@ defmodule TrippleStoreTest do
       assert :ok = TrippleStore.put(context, graph)
 
       pattern = [
-        {:a, :b, {:var, "u"}},
-        {{:var, "u"}, :x, {:var, "v"}}
+        match(value(:a), value(:b), var("u")),
+        match(var("u"), value(:xxx), var("v"))
       ]
 
       fun = fn(binding) ->
@@ -127,8 +129,8 @@ defmodule TrippleStoreTest do
       assert :ok = TrippleStore.put(context, graph)
 
       pattern = [
-        {:a, :b, {:var, "u"}},
-        {{:var, "u"}, :e, {:var, "v"}}
+        match(value(:a), value(:b), var("u")),
+        match(var("u"), value(:e), var("v"))
       ]
 
       fun = fn(binding) ->
@@ -142,6 +144,30 @@ defmodule TrippleStoreTest do
       assert [
         %{"u" => "d", "v" => 100}
       ] = bindings
+    end
+
+    test "with var as value", ctx do
+
+      # Allow the use of the tuple used for valiables in
+      # patterns to ab a value in the graph.
+      # If the graph contains the value `{:var, "a label"}`, it
+      # should not be treated as a variable in the match.
+      
+      context = ["foo"]
+      graph = [
+        {:a, :b, "d"},
+        {:a, :b, {:var, "u"}},
+        {"d", :e, 100}
+      ]
+      assert :ok = TrippleStore.put(context, graph)
+
+      pattern = [
+        match(value(:a), value(:b), var("u")),
+        match(var("u"), value(:e), var("v"))
+      ]
+
+      assert :ok = TrippleStore.select(context, pattern, &add(ctx, &1))
+      assert [%{"u" => "d", "v" => 100}] = get(ctx)
     end
 
   end

@@ -11,10 +11,7 @@ defmodule TrippleStore do
   @type tripple :: {subject, predicate, object}
   @type graph :: [tripple]
 
-  @type var :: {:var, label :: term}
-  @type binding :: %{var => any}
-  @type pattern :: [{subject | var, predicate | var, object | var}]
-
+  @type binding :: %{name :: any => value :: any}
   @type error :: {:error, reason :: any}
 
   @spec put(context, graph) :: :ok | error
@@ -26,7 +23,27 @@ defmodule TrippleStore do
   @spec delete(context) :: :ok | error
   def delete(context), do: TrippleStore.Access.delete(context)
 
-  @spec select(context, pattern, (binding -> any)) :: :ok | error
+  @spec select(context, Pattern.t, (binding -> any)) :: :ok | error
   def select(context, pattern, fun), do: TrippleStore.Access.select(context, pattern, fun)
+
+  defmodule Pattern do
+    @type var :: {:var, label :: any}
+    @type value :: {:value, any}
+    @type match :: {
+      :match,
+      subject :: var | value,
+      predicate :: var | value,
+      object :: var | value
+    }
+    @type t :: [match]
+
+    def var(name), do: {:var, name}
+
+    def value(val), do: {:value, val}
+
+    def match(subject, predicate, object) do
+      {:match, subject, predicate, object}
+    end
+  end
 
 end
