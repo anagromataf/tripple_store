@@ -17,6 +17,9 @@ defmodule TrippleStore do
   @spec put(context, graph) :: :ok | error
   def put(context, graph), do: TrippleStore.Access.put(context, graph)
 
+  @spec add(context, graph) :: :ok | error
+  def add(context, graph), do: TrippleStore.Access.add(context, graph)
+
   @spec get(context) :: {:ok, graph} | error
   def get(context), do: TrippleStore.Access.get(context)
 

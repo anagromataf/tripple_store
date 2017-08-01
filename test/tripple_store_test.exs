@@ -36,6 +36,41 @@ defmodule TrippleStoreTest do
     assert {:ok, []} = TrippleStore.get(context)
   end
 
+  test "add to context" do
+    graph = [
+      {:a, :b, :d},
+      {:a, :b, :c},
+      {:d, :e, :f}
+    ]
+    context = ["foo"]
+    assert :ok = TrippleStore.put(context, graph)
+    assert :ok = TrippleStore.add(context, [{:x, :y, :z}])
+    assert {:ok, result} = TrippleStore.get(context)
+    assert [
+      {:a, :b, :d},
+      {:a, :b, :c},
+      {:d, :e, :f},
+      {:x, :y, :z}
+    ] = result
+  end
+
+  test "add same to context" do
+    graph = [
+      {:a, :b, :d},
+      {:a, :b, :c},
+      {:d, :e, :f}
+    ]
+    context = ["foo"]
+    assert :ok = TrippleStore.put(context, graph)
+    assert :ok = TrippleStore.add(context, [{:d, :e, :f}])
+    assert {:ok, result} = TrippleStore.get(context)
+    assert [
+      {:a, :b, :d},
+      {:a, :b, :c},
+      {:d, :e, :f}
+    ] = result
+  end
+
   describe "select pattern" do
 
     test "with single match", ctx do
@@ -152,7 +187,7 @@ defmodule TrippleStoreTest do
       # patterns to ab a value in the graph.
       # If the graph contains the value `{:var, "a label"}`, it
       # should not be treated as a variable in the match.
-      
+
       context = ["foo"]
       graph = [
         {:a, :b, "d"},

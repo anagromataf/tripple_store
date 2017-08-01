@@ -10,6 +10,16 @@ defmodule TrippleStore.Access do
     end
   end
 
+  @spec add(TrippleStore.context, TrippleStore.graph) :: :ok | TrippleStore.error
+  def add(context, graph) do
+    transaction = fn () -> do_add(context, graph) end
+    with {:atomic, :ok} <- :mnesia.transaction(transaction) do
+      :ok
+    else
+      {:aborted, reason} -> {:error, reason}
+    end
+  end
+
   @spec get(TrippleStore.context) :: {:ok, TrippleStore.graph} | TrippleStore.error
   def get(context) do
     transaction = fn () -> do_get(context) end
@@ -46,6 +56,10 @@ defmodule TrippleStore.Access do
 
   defp do_put(context, graph) do
     :ok = do_delete(context)
+    :ok = do_insert(context, graph)
+  end
+
+  defp do_add(context, graph) do
     :ok = do_insert(context, graph)
   end
 
