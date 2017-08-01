@@ -1,5 +1,7 @@
 defmodule TrippleStore.Access do
 
+  import TrippleStore.Pattern
+
   @spec put(TrippleStore.context, TrippleStore.graph) :: :ok | TrippleStore.error
   def put(context, graph) do
     transaction = fn () -> do_put(context, graph) end
@@ -37,6 +39,20 @@ defmodule TrippleStore.Access do
       :ok
     else
       {:aborted, reason} -> {:error, reason}
+    end
+  end
+
+  @type values_fun :: ((TrippleStore.predicate, TrippleStore.object) -> any)
+  @spec get_values(TrippleStore.context, TrippleStore.subject, values_fun) :: :ok | TrippleStore.error
+  def get_values(context, subject, fun) do
+    pattern = [match(value(subject), var(:predicate), var(:object))]
+    f = fn(binding) ->
+      predicate = binding[:predicate]
+      object = binding[:object]
+      fun.(predicate, object)
+    end
+    with {:error, reason} <- select(context, pattern, f) do
+       :mnesia.abort(reason)
     end
   end
 
@@ -78,7 +94,7 @@ defmodule TrippleStore.Access do
     :ok = :mnesia.delete(:tripple_store, context, :write)
   end
 
-  defp do_select(context, [], fun, binding), do: fun.(binding)
+  defp do_select(_context, [], fun, binding), do: fun.(binding)
   defp do_select(context, [tripple|pattern], fun, binding) do
     for match <- match_triple(context, tripple, binding) do
       new_binding = update_binding(match, tripple, binding)
