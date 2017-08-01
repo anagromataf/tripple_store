@@ -1,4 +1,4 @@
-defmodule TrippleStore.Impl do
+defmodule TrippleStore.Access do
 
   @spec put(TrippleStore.context, TrippleStore.graph) :: :ok | TrippleStore.error
   def put(context, graph) do
