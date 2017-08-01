@@ -28,4 +28,11 @@ defmodule TrippleStore do
 
   @spec select(context, Pattern.t, (binding -> any)) :: :ok | error
   def select(context, pattern, fun), do: TrippleStore.Access.select(context, pattern, fun)
+
+  @spec path(context, from :: term, to :: term, (graph -> any)) :: :ok | error
+  def path(context, from, to, fun), do: path(context, from, to, :dfs, fun)
+
+  @spec path(context, from :: term, to :: term, algorithm :: atom, (graph -> any)) :: :ok | error
+  def path(context, from, to, :dfs, fun), do: TrippleStore.PathFind.DepthFirstSearch.path(context, from, to, fun)
+
 end
