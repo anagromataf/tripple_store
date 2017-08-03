@@ -16,4 +16,8 @@ defmodule TrippleStore.Pattern do
   def match(subject, predicate, object) do
     {:match, subject, predicate, object}
   end
+
+  def filter(fun, lhs, rhs) do
+    {:filter, fun, lhs, rhs}
+  end
 end

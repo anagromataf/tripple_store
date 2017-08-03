@@ -58,7 +58,10 @@ defmodule TrippleStore.Access do
 
   @spec select(TrippleStore.context, TrippleStore.pattern, (TrippleStore.binding -> any)) :: :ok | TrippleStore.error
   def select(context, pattern, fun) do
-    transaction = fn () -> do_select(context, pattern, fun, %{}) end
+    query = Enum.group_by(pattern, &elem(&1, 0))
+    match = Map.get(query, :match, [])
+    filter = Map.get(query, :filter, [])
+    transaction = fn () -> do_select(context, match, filter, fun, %{}) end
     with {:atomic, result} <- :mnesia.transaction(transaction) do
       result
     else
@@ -94,11 +97,16 @@ defmodule TrippleStore.Access do
     :ok = :mnesia.delete(:tripple_store, context, :write)
   end
 
-  defp do_select(_context, [], fun, binding), do: fun.(binding)
-  defp do_select(context, [tripple|pattern], fun, binding) do
+  defp do_select(_context, [], [], fun, binding), do: fun.(binding)
+  defp do_select(context, [], [filter|filters], fun, binding) do
+    if apply_filter(filter, binding) do
+      do_select(context, [], filters, fun, binding)
+    end
+  end
+  defp do_select(context, [tripple|pattern], filter, fun, binding) do
     for match <- match_triple(context, tripple, binding) do
       new_binding = update_binding(match, tripple, binding)
-      do_select(context, pattern, fun, new_binding)
+      do_select(context, pattern, filter, fun, new_binding)
     end
     :ok
   end
@@ -125,5 +133,14 @@ defmodule TrippleStore.Access do
     Map.put(binding, name, value)
   end
   defp bind_match(binding, _, _), do: binding
+
+  defp apply_filter({:filter, fun, lhs, rhs}, binding) do
+    with lhs when lhs != :'_' <- bind_var(lhs, binding),
+         rhs when rhs != :'_' <- bind_var(rhs, binding) do
+        fun.(lhs, rhs)
+    else
+      _ -> false
+    end
+  end
 
 end

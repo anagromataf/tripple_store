@@ -21,58 +21,59 @@ defmodule TrippleStoreTest do
   ## Tests
   ##
 
-  test "put, get and delete" do
-    context = ["foo"]
-    graph = [
-      {:a, :b, :d},
-      {:a, :b, :c},
-      {:d, :e, :f}
-    ]
+  describe "manage context" do
+    test "put, get and delete" do
+      context = ["foo"]
+      graph = [
+        {:a, :b, :d},
+        {:a, :b, :c},
+        {:d, :e, :f}
+      ]
 
-    assert :ok = TrippleStore.put(context, graph)
-    assert {:ok, result} = TrippleStore.get(context)
-    assert result == graph
-    assert :ok = TrippleStore.delete(context)
-    assert {:ok, []} = TrippleStore.get(context)
-  end
+      assert :ok = TrippleStore.put(context, graph)
+      assert {:ok, result} = TrippleStore.get(context)
+      assert result == graph
+      assert :ok = TrippleStore.delete(context)
+      assert {:ok, []} = TrippleStore.get(context)
+    end
 
-  test "add to context" do
-    graph = [
-      {:a, :b, :d},
-      {:a, :b, :c},
-      {:d, :e, :f}
-    ]
-    context = ["foo"]
-    assert :ok = TrippleStore.put(context, graph)
-    assert :ok = TrippleStore.add(context, [{:x, :y, :z}])
-    assert {:ok, result} = TrippleStore.get(context)
-    assert [
-      {:a, :b, :d},
-      {:a, :b, :c},
-      {:d, :e, :f},
-      {:x, :y, :z}
-    ] = result
-  end
+    test "add to context" do
+      graph = [
+        {:a, :b, :d},
+        {:a, :b, :c},
+        {:d, :e, :f}
+      ]
+      context = ["foo"]
+      assert :ok = TrippleStore.put(context, graph)
+      assert :ok = TrippleStore.add(context, [{:x, :y, :z}])
+      assert {:ok, result} = TrippleStore.get(context)
+      assert [
+        {:a, :b, :d},
+        {:a, :b, :c},
+        {:d, :e, :f},
+        {:x, :y, :z}
+      ] = result
+    end
 
-  test "add same to context" do
-    graph = [
-      {:a, :b, :d},
-      {:a, :b, :c},
-      {:d, :e, :f}
-    ]
-    context = ["foo"]
-    assert :ok = TrippleStore.put(context, graph)
-    assert :ok = TrippleStore.add(context, [{:d, :e, :f}])
-    assert {:ok, result} = TrippleStore.get(context)
-    assert [
-      {:a, :b, :d},
-      {:a, :b, :c},
-      {:d, :e, :f}
-    ] = result
+    test "add same to context" do
+      graph = [
+        {:a, :b, :d},
+        {:a, :b, :c},
+        {:d, :e, :f}
+      ]
+      context = ["foo"]
+      assert :ok = TrippleStore.put(context, graph)
+      assert :ok = TrippleStore.add(context, [{:d, :e, :f}])
+      assert {:ok, result} = TrippleStore.get(context)
+      assert [
+        {:a, :b, :d},
+        {:a, :b, :c},
+        {:d, :e, :f}
+      ] = result
+    end
   end
 
   describe "select pattern" do
-
     test "with single match", ctx do
       context = ["foo"]
       graph = [
@@ -214,7 +215,94 @@ defmodule TrippleStoreTest do
       assert :ok = TrippleStore.select(["foo", "1"], pattern, &add(ctx, &1))
       assert [%{"u" => :c}] = get(ctx)
     end
+  end
 
+  describe "filter selected" do
+    test "with a function, val and, value", ctx do
+      context = ["foo"]
+      graph = [
+        {:x, :a, 100},
+        {:x, :c, 200},
+        {:x, :d, 300},
+        {:x, :e, 400},
+        {:x, :f, 500}
+      ]
+      assert :ok = TrippleStore.put(context, graph)
+
+      pattern = [
+        match(value(:x), var("attr"), var("n")),
+        filter(&>/2, var("n"), value(300))
+      ]
+
+      fun = fn(binding) ->
+        add(ctx, binding)
+      end
+
+      assert :ok = TrippleStore.select(context, pattern, fun)
+
+      bindings = get(ctx)
+
+      assert [
+        %{"attr" => :e, "n" => 400},
+        %{"attr" => :f, "n" => 500}
+      ] = Enum.sort(bindings)
+    end
+
+    test "unbound var", ctx do
+      context = ["foo"]
+      graph = [
+        {:x, :a, 100},
+        {:x, :c, 200},
+        {:x, :d, 300},
+        {:x, :e, 400},
+        {:x, :f, 500}
+      ]
+      assert :ok = TrippleStore.put(context, graph)
+
+      pattern = [
+        match(value(:x), var("attr"), var("n")),
+        filter(&>/2, var("x"), value(300))
+      ]
+
+      fun = fn(binding) ->
+        add(ctx, binding)
+      end
+
+      assert :ok = TrippleStore.select(context, pattern, fun)
+
+      bindings = get(ctx)
+      assert [] = bindings
+    end
+
+    test "with two vars", ctx do
+      context = ["foo"]
+      graph = [
+        {:x, :a, 100},
+        {:x, :b, 200},
+        {:y, :a, 500},
+        {:y, :b, 400},
+        {:y, :b, 600}
+      ]
+      assert :ok = TrippleStore.put(context, graph)
+
+      pattern = [
+        match(var("n"), value(:a), var("a")),
+        match(var("n"), value(:b), var("b")),
+        filter(&>/2, var("a"), var("b"))
+      ]
+
+      fun = fn(binding) ->
+        add(ctx, binding)
+      end
+
+      assert :ok = TrippleStore.select(context, pattern, fun)
+
+      bindings = get(ctx)
+
+      assert [
+        %{"a" => 500, "b" => 400, "n" => :y}
+      ] = bindings
+    end
   end
 
   test "find path", ctx do
