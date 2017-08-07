@@ -13,7 +13,7 @@ defmodule TrippleStore.PathFind.DepthFirstSearch do
   ## Private
   ##
 
-  import TrippleStore.Access
+  import TrippleStore.Query
 
   defp do_find_path(_context, from, to, fun, _visited, path) when from == to, do: fun.(Enum.reverse(path))
   defp do_find_path(context, from, to, fun, visited, path) do

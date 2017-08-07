@@ -27,7 +27,7 @@ defmodule TrippleStore do
   def delete(context), do: TrippleStore.Access.delete(context)
 
   @spec select(context, Pattern.t, (binding -> any)) :: :ok | error
-  def select(context, pattern, fun), do: TrippleStore.Access.select(context, pattern, fun)
+  def select(context, pattern, fun), do: TrippleStore.Query.select(context, pattern, fun)
 
   @spec path(context, from :: term, to :: term, (graph -> any)) :: :ok | error
   def path(context, from, to, fun), do: path(context, from, to, :dfs, fun)
