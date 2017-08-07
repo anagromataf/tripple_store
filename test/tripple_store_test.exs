@@ -88,8 +88,8 @@ defmodule TrippleStoreTest do
         match(var("u"), value(:e), var("v"))
       ]
 
-      fun = fn(binding) ->
-        add(ctx, binding)
+      fun = fn(context, binding) ->
+        add(ctx, {context, binding})
       end
 
       assert :ok = TrippleStore.select(context, pattern, fun)
@@ -97,7 +97,7 @@ defmodule TrippleStoreTest do
       bindings = get(ctx)
 
       assert [
-        %{"u" => :d, "v" => :f}
+        {^context, %{"u" => :d, "v" => :f}}
       ] = bindings
     end
 
@@ -116,8 +116,8 @@ defmodule TrippleStoreTest do
         match(var("u"), value(:e), var("v"))
       ]
 
-      fun = fn(binding) ->
-        add(ctx, binding)
+      fun = fn(context, binding) ->
+        add(ctx, {context, binding})
       end
 
       assert :ok = TrippleStore.select(context, pattern, fun)
@@ -125,8 +125,8 @@ defmodule TrippleStoreTest do
       bindings = get(ctx)
 
       assert [
-        %{"u" => :d, "v" => :f},
-        %{"u" => :d, "v" => :g}
+        {^context, %{"u" => :d, "v" => :f}},
+        {^context, %{"u" => :d, "v" => :g}}
       ] = Enum.sort(bindings)
     end
 
@@ -145,8 +145,8 @@ defmodule TrippleStoreTest do
         match(var("u"), value(:xxx), var("v"))
       ]
 
-      fun = fn(binding) ->
-        add(ctx, binding)
+      fun = fn(context, binding) ->
+        add(ctx, {context, binding})
       end
 
       assert :ok = TrippleStore.select(context, pattern, fun)
@@ -169,8 +169,8 @@ defmodule TrippleStoreTest do
         match(var("u"), value(:e), var("v"))
       ]
 
-      fun = fn(binding) ->
-        add(ctx, binding)
+      fun = fn(context, binding) ->
+        add(ctx, {context, binding})
       end
 
       assert :ok = TrippleStore.select(context, pattern, fun)
@@ -178,7 +178,7 @@ defmodule TrippleStoreTest do
       bindings = get(ctx)
 
       assert [
-        %{"u" => "d", "v" => 100}
+        {^context, %{"u" => "d", "v" => 100}}
       ] = bindings
     end
 
@@ -202,8 +202,12 @@ defmodule TrippleStoreTest do
         match(var("u"), value(:e), var("v"))
       ]
 
-      assert :ok = TrippleStore.select(context, pattern, &add(ctx, &1))
-      assert [%{"u" => "d", "v" => 100}] = get(ctx)
+      fun = fn(context, binding) ->
+        add(ctx, {context, binding})
+      end
+
+      assert :ok = TrippleStore.select(context, pattern, fun)
+      assert [{^context, %{"u" => "d", "v" => 100}}] = get(ctx)
     end
 
     test "with specific contexts", ctx do
@@ -212,12 +216,16 @@ defmodule TrippleStoreTest do
 
       pattern = [match(value(:a), value(:b), var("u"))]
 
-      assert :ok = TrippleStore.select(["foo", "1"], pattern, &add(ctx, &1))
-      assert [%{"u" => :c}] = get(ctx)
+      fun = fn(context, binding) ->
+        add(ctx, {context, binding})
+      end
+
+      assert :ok = TrippleStore.select(["foo", "1"], pattern, fun)
+      assert [{["foo", "1"], %{"u" => :c}}] = get(ctx)
     end
   end
 
-  describe "filter selected" do
+  describe "filtered select" do
     test "with a function, val and, value", ctx do
       context = ["foo"]
       graph = [
@@ -234,8 +242,8 @@ defmodule TrippleStoreTest do
         filter(&>/2, var("n"), value(300))
       ]
 
-      fun = fn(binding) ->
-        add(ctx, binding)
+      fun = fn(context, binding) ->
+        add(ctx, {context, binding})
       end
 
       assert :ok = TrippleStore.select(context, pattern, fun)
@@ -243,8 +251,8 @@ defmodule TrippleStoreTest do
       bindings = get(ctx)
 
       assert [
-        %{"attr" => :e, "n" => 400},
-        %{"attr" => :f, "n" => 500}
+        {^context, %{"attr" => :e, "n" => 400}},
+        {^context, %{"attr" => :f, "n" => 500}}
       ] = Enum.sort(bindings)
     end
 
@@ -264,8 +272,8 @@ defmodule TrippleStoreTest do
         filter(&>/2, var("x"), value(300))
       ]
 
-      fun = fn(binding) ->
-        add(ctx, binding)
+      fun = fn(context, binding) ->
+        add(ctx, {context, binding})
       end
 
       assert :ok = TrippleStore.select(context, pattern, fun)
@@ -291,8 +299,8 @@ defmodule TrippleStoreTest do
         filter(&>/2, var("a"), var("b"))
       ]
 
-      fun = fn(binding) ->
-        add(ctx, binding)
+      fun = fn(context, binding) ->
+        add(ctx, {context, binding})
       end
 
       assert :ok = TrippleStore.select(context, pattern, fun)
@@ -300,7 +308,7 @@ defmodule TrippleStoreTest do
       bindings = get(ctx)
 
       assert [
-        %{"a" => 500, "b" => 400, "n" => :y}
+        {^context, %{"a" => 500, "b" => 400, "n" => :y}}
       ] = bindings
     end
   end

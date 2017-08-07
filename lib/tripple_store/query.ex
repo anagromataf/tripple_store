@@ -2,7 +2,7 @@ defmodule TrippleStore.Query do
 
   import TrippleStore.Pattern
 
-  @spec select(TrippleStore.context, TrippleStore.pattern, (TrippleStore.binding -> any)) :: :ok | TrippleStore.error
+  @spec select(TrippleStore.context, TrippleStore.pattern, (TrippleStore.context, TrippleStore.binding -> any)) :: :ok | TrippleStore.error
   def select(context, pattern, fun) do
     query = Enum.group_by(pattern, &elem(&1, 0))
     match = Map.get(query, :match, [])
@@ -19,7 +19,7 @@ defmodule TrippleStore.Query do
   @spec get_values(TrippleStore.context, TrippleStore.subject, values_fun) :: :ok | TrippleStore.error
   def get_values(context, subject, fun) do
     pattern = [match(value(subject), var(:predicate), var(:object))]
-    f = fn(binding) ->
+    f = fn(_context, binding) ->
       predicate = binding[:predicate]
       object = binding[:object]
       fun.(predicate, object)
@@ -33,7 +33,7 @@ defmodule TrippleStore.Query do
   ## Private
   ##
 
-  defp do_select(_context, [], [], fun, binding), do: fun.(binding)
+  defp do_select(context, [], [], fun, binding), do: fun.(context, binding)
   defp do_select(context, [], [filter|filters], fun, binding) do
     if apply_filter(filter, binding) do
       do_select(context, [], filters, fun, binding)
